@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>لعبة تخمين الرمز</title>
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .input-container {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .input-box {
+      width: 60px;
+      height: 60px;
+      background-color: #222;
+      border-radius: 8px;
+      font-size: 24px;
+      color: white;
+      border: 2px solid #333;
+      text-align: center;
+    }
+    .result-box {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .green { background-color: #3aaf5f; }
+    .yellow { background-color: #c9a038; }
+    .gray { background-color: #444; }
+    .red { background-color: #aa3333; }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 30px;
+    }
+    .menu {
+      margin-bottom: 20px;
+    }
+    .attempts-selector {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>لعبة تخمين الرمز</h1>
+  
+  <div class="menu">
+    <button onclick="setRandomCode()">كود عشوائي</button>
+    <button onclick="promptCode()">تعيين الكود</button>
+    <button onclick="resetGame()">إعادة</button>
+  </div>
+
+  <div class="attempts-selector">
+    <label for="attempts">اختر عدد المحاولات:</label>
+    <select id="attempts" onchange="updateAttempts()">
+      <option value="5">5 محاولات</option>
+      <option value="6">6 محاولات</option>
+      <option value="7">7 محاولات</option>
+      <option value="8">8 محاولات</option>
+      <option value="9">9 محاولات</option>
+      <option value="10">10 محاولات</option>
+      <option value="11">11 محاولات</option>
+      <option value="12">12 محاولات</option>
+      <option value="13">13 محاولات</option>
+      <option value="14">14 محاولات</option>
+      <option value="15">15 محاولات</option>
+    </select>
+  </div>
+
+  <div class="input-container">
+    <input id="in0" maxlength="1" class="input-box" oninput="moveNext(0)">
+    <input id="in1" maxlength="1" class="input-box" oninput="moveNext(1)">
+    <input id="in2" maxlength="1" class="input-box" oninput="moveNext(2)">
+    <input id="in3" maxlength="1" class="input-box" oninput="moveNext(3)">
+  </div>
+  <button onclick="checkCode()">تحقق</button>
+
+  <div id="results"></div>
+
+  <!-- أصوات اللعبة -->
+  <audio id="errorSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+  <audio id="successSound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+  <audio id="resetSound" src="https://www.soundjay.com/button/beep-09.wav"></audio>
+
+  <script>
+    let secret = "1234";
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    function moveNext(index) {
+      const current = document.getElementById(`in${index}`);
+      if (current.value.length === 1 && index < 3) {
+        document.getElementById(`in${index + 1}`).focus();
+      }
+    }
+
+    function checkCode() {
+      if (attempts >= maxAttempts) return;
+
+      let guess = "";
+      for (let i = 0; i < 4; i++) {
+        const val = document.getElementById(`in${i}`).value;
+        if (!val.match(/^[0-9]$/)) return;
+        guess += val;
+      }
+
+      const resultRow = document.createElement("div");
+      resultRow.className = "input-container";
+
+      let feedback = Array(4).fill("gray");
+      let secretUsed = Array(4).fill(false);
+      let guessUsed = Array(4).fill(false);
+
+      for (let i = 0; i < 4; i++) {
+        if (guess[i] === secret[i]) {
+          feedback[i] = "green";
+          secretUsed[i] = true;
+          guessUsed[i] = true;
+        }
+      }
+
+      for (let i = 0; i < 4; i++) {
+        if (!guessUsed[i]) {
+          for (let j = 0; j < 4; j++) {
+            if (!secretUsed[j] && guess[i] === secret[j]) {
+              feedback[i] = "yellow";
+              secretUsed[j] = true;
+              break;
+            }
+          }
+        }
+      }
+
+      let allGray = true;
+      for (let i = 0; i < 4; i++) {
+        const box = document.createElement("div");
+        box.className = `result-box ${feedback[i]}`;
+        box.textContent = guess[i];
+        resultRow.appendChild(box);
+        if (feedback[i] !== "gray") allGray = false;
+      }
+
+      document.getElementById("results").appendChild(resultRow);
+
+      if (allGray) {
+        document.getElementById("errorSound").play();
+      } else {
+        document.getElementById("successSound").play();
+      }
+
+      attempts++;
+
+      setTimeout(() => {
+        resultRow.remove();
+      }, 3000);
+
+      clearInputs();
+    }
+
+    function clearInputs() {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById(`in${i}`).value = "";
+      }
+      document.getElementById("in0").focus();
+    }
+
+    function resetGame() {
+      attempts = 0;
+      document.getElementById("results").innerHTML = "";
+      clearInputs();
+      document.getElementById("resetSound").play();
+      alert("تمت إعادة اللعبة!");
+    }
+
+    function setRandomCode() {
+      secret = "";
+      for (let i = 0; i < 4; i++) {
+        secret += Math.floor(Math.random() * 10).toString();
+      }
+      alert("تم تعيين كود عشوائي!");
+      resetGame();
+    }
+
+    function promptCode() {
+      const input = prompt("أدخل الكود (٤ أرقام):");
+      if (input && input.length === 4 && /^[0-9]+$/.test(input)) {
+        secret = input;
+        alert("تم تعيين الكود بنجاح!");
+        resetGame();
+      } else {
+        alert("الكود غير صالح!");
+      }
+    }
+  </script>
+</body>
+</html>
